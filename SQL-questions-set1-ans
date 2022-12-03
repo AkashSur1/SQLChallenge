@@ -232,4 +232,106 @@ select
 from unique_caller
 group by person1, person2;
 
+Q40.
+select product_id, ifnull(round(sum(prices_sum) / sum(units), 2), 0) as average_price
+    from (
+        select p.product_id as product_id, units, price * units as prices_sum
+            from Prices p left join UnitsSold u
+            on p.product_id = u.product_id and purchase_date between start_date and end_date
+    ) as temp
+    group by product_id;
+
+Q41.
+SELECT name AS warehouse_name,
+       SUM(units*Width*LENGTH*Height) AS volume
+FROM Warehouse w
+INNER JOIN Products p ON w.product_id = p.product_id
+GROUP BY name
+ORDER BY NULL;
+
+Q42.
+select a.sale_date, (a.sold_num - b.sold_num) as difference from Sales a 
+left join Sales b
+on a.sale_date = b.sale_date
+where a.fruit = 'apples' and b.fruit = 'oranges';
+
+Q43.
+WITH CTE AS (
+SELECT
+player_id, min(event_date) as event_start_date
+from
+Activity
+group by player_id )
+
+SELECT
+round((count(distinct c.player_id) / (select count(distinct player_id) from activity)),2)as fraction
+FROM
+CTE c
+JOIN Activity a
+on c.player_id = a.player_id
+and datediff(c.event_start_date, a.event_date) = -1;
+
+Q44.
+select a.name 
+from employee a 
+inner join employee b 
+on (a.id = b.managerid) 
+group by a.name 
+having count(distinct b.id) >= 5;
+
+Q45.
+select a.dept_name, coalesce(count(student_id), 0) student_number
+from department a 
+left join student b
+on (a.dept_id = b.dept_id)
+group by a.dept_name
+order by student_number desc, a.dept_name asc;
+
+Q46.
+SELECT customer_id
+FROM customer
+GROUP BY customer_id
+HAVING COUNT(DISTINCT product_key) = (SELECT COUNT(*) FROM product);
+
+Q47.
+SELECT project_id, employee_id
+FROM (SELECT
+        p.project_id,
+        p.employee_id,
+        DENSE_RANK() OVER(PARTITION BY p.project_id ORDER BY e.experience_years DESC) as rnk
+    FROM project as p JOIN employee as e
+    ON p.employee_id = e.employee_id) a
+WHERE rnk = 1;
+
+Q48.
+select Books.book_id, name from Books join Orders
+    on Books.book_id = Orders.book_id
+    where available_from < '2019-05-23'
+    and dispatch_date between '2018-06-23' and '2019-06-23'
+    group by Books.book_id
+    having sum(quantity) < 10
+union
+select book_id, name from Books
+    where available_from < '2019-05-23'
+    and book_id not in (
+        select distinct book_id from Orders where dispatch_date between '2018-06-23' and '2019-06-23');
+Q49.
+select student_id, min(course_id) as course_id, grade from Enrollments
+where (student_id, grade) in (select student_id, max(grade) 
+	from Enrollments group by student_id)
+group by student_id;
+
+Q50.
+select group_id, player_id from (
+	select p.group_id, ps.player_id, sum(ps.score) as scorefrom Players p,
+	    (select first_player as player_id, first_score as score
+            from Matches
+            union all
+            select second_player, second_score
+            from Matches) ps
+	where p.player_id = ps.player_id
+	group by ps.player_id
+	order by group_id, score desc, player_id
+) top_scores
+group by group_id;
 
